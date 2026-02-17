@@ -8,9 +8,19 @@ import math
 import platform
 import sys
 import warnings
+import pytz  # Added for timezone support
+import time  # Added for timezone setting
+
 warnings.filterwarnings('ignore')
 
 app = Flask(__name__)
+
+# Set timezone to IST (Indian Standard Time)
+os.environ['TZ'] = 'Asia/Kolkata'
+try:
+    time.tzset()  # This works on Render (Unix-based systems)
+except AttributeError:
+    pass  # For Windows local development
 
 # Model path
 MODEL_PATH = os.path.join('model', 'delhi_travel_time_model.pkl')
@@ -124,8 +134,8 @@ def predict_travel_time(start_location, end_location, vehicle_speed, traffic_lev
             features = np.array([[
                 distance,           # Distance in km
                 vehicle_speed,      # Speed in km/h
-                1.0,                # You can add more features here
-                1.0                 # Based on your model's training
+                traffic_mult,       # Traffic multiplier
+                weather_mult        # Weather multiplier
             ]])
             
             # Make prediction using the model
@@ -148,9 +158,13 @@ def predict_travel_time(start_location, end_location, vehicle_speed, traffic_lev
     # Convert to minutes
     predicted_time_minutes = predicted_time_hours * 60
     
-    # Calculate arrival time
-    current_time = datetime.now()
+    # FIXED: Use IST timezone (Indian Standard Time) instead of UTC
+    ist = pytz.timezone('Asia/Kolkata')
+    current_time = datetime.now(ist)
     arrival_time = current_time + timedelta(minutes=predicted_time_minutes)
+    
+    # Format traffic level for display
+    traffic_display = traffic_level.replace('_', ' ').title()
     
     return {
         'distance_km': round(distance, 2),
@@ -158,7 +172,7 @@ def predict_travel_time(start_location, end_location, vehicle_speed, traffic_lev
         'travel_time_hours': round(predicted_time_hours, 2),
         'arrival_time': arrival_time.strftime('%I:%M %p'),
         'arrival_date': arrival_time.strftime('%d %b %Y'),
-        'traffic_level': traffic_level.replace('_', ' ').title(),
+        'traffic_level': traffic_display,
         'weather_condition': weather_condition.title(),
         'average_speed': vehicle_speed,
         'start_location': start_location,
@@ -266,30 +280,44 @@ def get_locations():
 @app.route('/health')
 def health_check():
     """Health check endpoint"""
+    # Get current time in IST for verification
+    ist = pytz.timezone('Asia/Kolkata')
+    current_ist = datetime.now(ist).strftime('%Y-%m-%d %H:%M:%S %Z')
+    
     return jsonify({
         'status': 'healthy',
         'python_version': sys.version.split()[0],
         'platform': platform.machine(),
         'model_loaded': model is not None,
         'locations_count': len(DELHI_LOCATIONS),
+        'current_time_ist': current_ist,
+        'timezone': 'Asia/Kolkata',
         'message': 'Delhi Travel Time Predictor is running'
     })
 
 if __name__ == '__main__':
+    # Get current time in IST for startup message
+    ist = pytz.timezone('Asia/Kolkata')
+    current_ist = datetime.now(ist).strftime('%Y-%m-%d %H:%M:%S')
+    
     print("\n" + "="*60)
     print("🚗 DELHI TRAVEL TIME PREDICTOR")
     print("="*60)
-    print(f"📅 Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"📅 Started at: {current_ist} IST")
     print(f"🐍 Python: {sys.version.split()[0]}")
     print(f"💻 Platform: {platform.machine()} ({platform.system()})")
     print(f"📍 Locations loaded: {len(DELHI_LOCATIONS)}")
     print(f"🤖 ML Model: {'✅ Loaded' if model else '⚠️ Using fallback'}")
+    print(f"⏰ Timezone: Asia/Kolkata (IST)")
     print("="*60)
     print("\n🌐 Server starting...")
     print("📱 Access the app:")
     print("   → Local: http://localhost:5000")
-    print("   → Network: http://10.219.48.164:5000")
+    if 'RENDER' in os.environ:
+        print("   → Render: https://delhi-travel-predictor.onrender.com")
     print("\n🛑 Press CTRL+C to stop the server")
     print("="*60 + "\n")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Get port from environment variable (for Render) or use default
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
