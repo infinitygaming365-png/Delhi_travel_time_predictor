@@ -13,7 +13,7 @@ Flask==2.3.3
 gunicorn==21.2.0
 Werkzeug==2.3.7
 
-# Timezone support - ONLY ONE LINE, not two!
+# Timezone support - ONLY ONE LINE
 pytz==2024.1
 
 # Utilities
