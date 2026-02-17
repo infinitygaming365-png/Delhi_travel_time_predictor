@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delhi Travel Time Predictor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .main-container {
+            padding: 40px 20px;
+        }
+        
+        .prediction-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .card-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .card-header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+        
+        .card-header p {
+            margin: 10px 0 0;
+            opacity: 0.9;
+        }
+        
+        .card-body {
+            padding: 40px;
+        }
+        
+        .input-group-custom {
+            margin-bottom: 25px;
+        }
+        
+        .input-group-custom label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+        }
+        
+        .input-group-custom input,
+        .input-group-custom select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .input-group-custom input:focus,
+        .input-group-custom select:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        .predict-btn {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 10px;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+        
+        .predict-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(52, 152, 219, 0.4);
+        }
+        
+        .predict-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+            border-left: 5px solid var(--success-color);
+        }
+        
+        .result-title {
+            color: #2c3e50;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .result-item {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .result-item i {
+            font-size: 2em;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+        }
+        
+        .result-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        
+        .result-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        .traffic-indicator {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        
+        .traffic-low { background: #d4edda; color: #155724; }
+        .traffic-medium { background: #fff3cd; color: #856404; }
+        .traffic-high { background: #f8d7da; color: #721c24; }
+        .traffic-very_high { background: #dc3545; color: white; }
+        
+        .weather-icon {
+            font-size: 1.5em;
+            margin-right: 5px;
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .swap-locations {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px auto;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .swap-locations:hover {
+            transform: rotate(180deg);
+            background: #2980b9;
+        }
+        
+        @media (max-width: 768px) {
+            .card-body {
+                padding: 20px;
+            }
+            
+            .result-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="prediction-card">
+            <div class="card-header">
+                <h1><i class="fas fa-car"></i> Delhi Travel Time Predictor</h1>
+                <p>Predict your travel time across Delhi with AI-powered accuracy</p>
+            </div>
+            
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="input-group-custom">
+                            <label for="start_location"><i class="fas fa-map-marker-alt"></i> Start Location</label>
+                            <select id="start_location" class="form-select">
+                                <option value="">Select start location</option>
+                                {% for location in locations %}
+                                <option value="{{ location }}">{{ location }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="swap-locations" onclick="swapLocations()">
+                            <i class="fas fa-exchange-alt"></i>
+                        </div>
+                        
+                        <div class="input-group-custom">
+                            <label for="end_location"><i class="fas fa-flag-checkered"></i> End Location</label>
+                            <select id="end_location" class="form-select">
+                                <option value="">Select end location</option>
+                                {% for location in locations %}
+                                <option value="{{ location }}">{{ location }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="input-group-custom">
+                            <label for="vehicle_speed"><i class="fas fa-tachometer-alt"></i> Average Vehicle Speed (km/h)</label>
+                            <input type="number" id="vehicle_speed" min="1" max="120" value="40" step="1">
+                        </div>
+                        
+                        <div class="input-group-custom">
+                            <label for="traffic_level"><i class="fas fa-traffic-light"></i> Traffic Level</label>
+                            <select id="traffic_level" class="form-select">
+                                {% for level in traffic_levels %}
+                                <option value="{{ level }}" {% if level == 'medium' %}selected{% endif %}>
+                                    {{ level|replace('_', ' ')|title }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="input-group-custom">
+                            <label for="weather_condition"><i class="fas fa-cloud-sun"></i> Weather Condition</label>
+                            <select id="weather_condition" class="form-select">
+                                {% for condition in weather_conditions %}
+                                <option value="{{ condition }}" {% if condition == 'clear' %}selected{% endif %}>
+                                    {{ condition|title }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="predict-btn" onclick="predictTravelTime()">
+                    <i class="fas fa-magic"></i> Predict Travel Time
+                </button>
+                
+                <div class="loading-spinner" id="loadingSpinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Calculating your travel time...</p>
+                </div>
+                
+                <div class="error-message" id="errorMessage"></div>
+                
+                <div class="result-card" id="resultCard" style="display: none;">
+                    <h3 class="result-title"><i class="fas fa-clock"></i> Your Journey Details</h3>
+                    
+                    <div class="result-grid">
+                        <div class="result-item">
+                            <i class="fas fa-road"></i>
+                            <div class="result-value" id="distanceValue">0</div>
+                            <div class="result-label">Distance</div>
+                        </div>
+                        
+                        <div class="result-item">
+                            <i class="fas fa-hourglass-half"></i>
+                            <div class="result-value" id="timeMinutes">0</div>
+                            <div class="result-label">Travel Time (minutes)</div>
+                        </div>
+                        
+                        <div class="result-item">
+                            <i class="fas fa-clock"></i>
+                            <div class="result-value" id="arrivalTime">--:--</div>
+                            <div class="result-label">Arrival Time</div>
+                        </div>
+                        
+                        <div class="result-item">
+                            <i class="fas fa-gauge-high"></i>
+                            <div class="result-value" id="avgSpeed">0</div>
+                            <div class="result-label">Avg Speed (km/h)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <i class="fas fa-traffic-light"></i>
+                                <strong>Traffic Level:</strong> 
+                                <span id="trafficLevel" class="traffic-indicator">Medium</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <i class="fas fa-cloud"></i>
+                                <strong>Weather:</strong> 
+                                <span id="weatherCondition">Clear</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function swapLocations() {
+            const startSelect = document.getElementById('start_location');
+            const endSelect = document.getElementById('end_location');
+            
+            const temp = startSelect.value;
+            startSelect.value = endSelect.value;
+            endSelect.value = temp;
+        }
+        
+        async function predictTravelTime() {
+            // Get form values
+            const startLocation = document.getElementById('start_location').value;
+            const endLocation = document.getElementById('end_location').value;
+            const vehicleSpeed = document.getElementById('vehicle_speed').value;
+            const trafficLevel = document.getElementById('traffic_level').value;
+            const weatherCondition = document.getElementById('weather_condition').value;
+            
+            // Validate inputs
+            if (!startLocation || !endLocation) {
+                showError('Please select both start and end locations');
+                return;
+            }
+            
+            if (startLocation === endLocation) {
+                showError('Start and end locations must be different');
+                return;
+            }
+            
+            if (vehicleSpeed <= 0 || vehicleSpeed > 120) {
+                showError('Please enter a valid speed between 1 and 120 km/h');
+                return;
+            }
+            
+            // Show loading spinner
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('resultCard').style.display = 'none';
+            document.querySelector('.predict-btn').disabled = true;
+            
+            try {
+                // Create form data
+                const formData = new FormData();
+                formData.append('start_location', startLocation);
+                formData.append('end_location', endLocation);
+                formData.append('vehicle_speed', vehicleSpeed);
+                formData.append('traffic_level', trafficLevel);
+                formData.append('weather_condition', weatherCondition);
+                
+                // Make prediction request
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayResults(result.data);
+                } else {
+                    showError(result.error || 'Prediction failed');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            } finally {
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.querySelector('.predict-btn').disabled = false;
+            }
+        }
+        
+        function displayResults(data) {
+            // Update result values
+            document.getElementById('distanceValue').textContent = data.distance_km + ' km';
+            document.getElementById('timeMinutes').textContent = data.travel_time_minutes;
+            document.getElementById('arrivalTime').textContent = data.arrival_time;
+            document.getElementById('avgSpeed').textContent = data.average_speed + ' km/h';
+            
+            // Update traffic level with appropriate class
+            const trafficSpan = document.getElementById('trafficLevel');
+            trafficSpan.textContent = data.traffic_level.replace('_', ' ').toUpperCase();
+            trafficSpan.className = 'traffic-indicator traffic-' + data.traffic_level;
+            
+            // Update weather condition
+            document.getElementById('weatherCondition').textContent = data.weather_condition.toUpperCase();
+            
+            // Show result card
+            document.getElementById('resultCard').style.display = 'block';
+            
+            // Scroll to results
+            document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('resultCard').style.display = 'none';
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Add enter key support
+        document.getElementById('vehicle_speed').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                predictTravelTime();
+            }
+        });
+        
+        // Add reverse geocoding option for custom locations (optional)
+        function getCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    alert('Current location: ' + position.coords.latitude + ', ' + position.coords.longitude);
+                    // You can add logic to reverse geocode and set location
+                });
+            } else {
+                alert('Geolocation is not supported by this browser.');
+            }
+        }
+    </script>
+</body>
+</html>
